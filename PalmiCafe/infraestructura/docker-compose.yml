@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+
+  webserver:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - carro_api
+      - productos_api
+      - recetas_api
+      - resenas_api
+      - usuarios_api
+    networks:
+      - dev_network
+
+  carro_api:
+    build:
+      context: ./APIS
+      dockerfile: Dockerfile.carro
+    ports:
+      - "3100:3100"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@db_dev:5432/postgres?schema=carro
+    volumes:
+      - ./APIS/carro:/PalmiCafe/infraestructura/APIS/carro
+    networks:
+      - dev_network
+
+  productos_api:
+    build:
+      context: ./APIS
+      dockerfile: Dockerfile.productos
+    ports:
+      - "3200:3200"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@db_dev:5432/postgres?schema=productos
+    volumes:
+      - ./APIS/productos:/PalmiCafe/infraestructura/APIS/productos
+    networks:
+      - dev_network
+
+  recetas_api:
+    build:
+      context: ./APIS
+      dockerfile: Dockerfile.recetas
+    ports:
+      - "3300:3300"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@db_dev:5432/postgres?schema=recetas
+    volumes:
+      - ./APIS/recetas:/PalmiCafe/infraestructura/APIS/recetas
+    networks:
+      - dev_network
+
+  resenas_api:
+    build:
+      context: ./APIS
+      dockerfile: Dockerfile.resenas
+    ports:
+      - "3400:3400"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@db_dev:5432/postgres?schema=resenas
+    volumes:
+      - ./APIS/resenas:/PalmiCafe/infraestructura/APIS/resenas
+    networks:
+      - dev_network
+
+  usuarios_api:
+    build:
+      context: ./APIS
+      dockerfile: Dockerfile.usuarios
+    ports:
+      - "3500:3500"
+    environment:
+      - DATABASE_URL=postgresql://postgres:12345@db_dev:5432/postgres?schema=usuarios
+    volumes:
+      - ./APIS/usuarios:/PalmiCafe/infraestructura/APIS/usuarios
+    networks:
+      - dev_network
+
+  db_dev:
+    image: postgres:15
+    container_name: palmicafe_db_dev
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 4GB
+        reservations:
+          cpus: "0.1"
+          memory: 1GB
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: 12345
+    volumes:
+      - palmicafe_db_data:/var/lib/postgresql/data
+      - ./pg_logs:/var/log/postgresql
+      - ./postgresql_configs/postgresql.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - dev_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: dev_pgadmin
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: 12345
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    driver: bridge
+
+volumes:
+  palmicafe_db_data:
+    driver: local

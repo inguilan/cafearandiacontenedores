@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Productos - Cafe Arandia</title>
+</head>
+
+<body>
+  <header class="main-header">
+    <div class="logo">
+      <h1><a href="index.html" style="color: white; text-decoration: none;">Palmicafe Arandia</a></h1>
+    </div>
+    <nav>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="products.html">Productos</a></li>
+        <li><a href="recipes.html">Recetas</a></li>
+        <li><a href="reviews.html">Reseñas</a></li>
+        <li><a href="cart.html">Carrito</a></li>
+      </ul>
+    </nav>
+  </header>
+
+
+  <main class="container">
+    <h1>Productos</h1>
+    <button id="add-product-btn">Añadir Producto</button>
+    <div id="product-list" class="products-container"></div>
+  </main>
+
+  <!-- Modal para añadir producto -->
+  <div id="product-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Añadir Producto</h2>
+      <form id="product-form" enctype="multipart/form-data">
+        <label for="user-id">ID del Usuario:</label>
+        <input type="number" id="user-id" required>
+
+        <label for="product-name">Nombre del Producto:</label>
+        <input type="text" id="product-name" required>
+
+        <label for="product-price">Precio:</label>
+        <input type="number" id="product-price" required step="0.01">
+
+        <label for="product-description">Descripción:</label>
+        <textarea id="product-description"></textarea>
+
+        <label for="product-image">Imagen:</label>
+        <input type="file" id="product-image">
+
+        <button type="submit">Guardar Producto</button>
+        <button type="button" class="close-modal">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('product-modal');
+    const openModalBtn = document.getElementById('add-product-btn');
+    const closeModalBtns = document.querySelectorAll('.close-modal');
+
+    openModalBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+    closeModalBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('hidden')));
+
+    const productForm = document.getElementById('product-form');
+    productForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData();
+      formData.append('userId', document.getElementById('user-id').value);
+      formData.append('nombre', document.getElementById('product-name').value);
+      formData.append('precio', document.getElementById('product-price').value);
+      formData.append('descripcion', document.getElementById('product-description').value);
+      const imageFile = document.getElementById('product-image').files[0];
+      if (imageFile) {
+        formData.append('imagen', imageFile);
+      }
+
+      try {
+        const response = await fetch('http://localhost:8000/products/add', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const result = await response.json();
+        alert(result.message);
+        modal.classList.add('hidden');
+        loadProducts();
+      } catch (error) {
+        console.error('Error al añadir producto:', error);
+        alert('Error al añadir producto. Revisa la consola.');
+      }
+    });
+    async function loadProducts() {
+  try {
+    const response = await fetch('http://localhost:8000/products');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const products = await response.json();
+    const productList = document.getElementById('product-list');
+    productList.innerHTML = products.map(p => `
+      <div class="product-card">
+        <img src="http://localhost:8000${p.imagen}" alt="${p.nombre}" style="width:100%; max-height:200px; object-fit:cover;">
+        <h3>${p.nombre}</h3>
+        <p>${p.descripcion}</p>
+        <p><strong>$${p.precio.toFixed(2)}</strong></p>
+        <p><em>Usuario: ${p.user?.nombre || 'Desconocido'}</em></p>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Error al cargar productos:', error);
+  }
+}
+
+    
+
+    loadProducts();
+  </script>
+</body>
+
+</html>

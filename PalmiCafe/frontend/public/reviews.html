@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>Reseñas - Cafe Arandia</title>
+</head>
+
+<body>
+  <header class="main-header">
+    <div class="logo">
+      <h1><a href="index.html" style="color: white; text-decoration: none;">Palmicafe Arandia</a></h1>
+    </div>
+    <nav>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="products.html">Productos</a></li>
+        <li><a href="recipes.html">Recetas</a></li>
+        <li><a href="reviews.html">Reseñas</a></li>
+        <li><a href="cart.html">Carrito</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h1>Reseñas</h1>
+    <button id="add-review-btn" class="cta-button">Añadir Reseña</button>
+    <div id="review-list" class="blog-container"></div>
+  </main>
+
+  <!-- Modal para añadir reseña -->
+  <div id="review-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Añadir Reseña</h2>
+      <form id="review-form" enctype="multipart/form-data">
+        <label for="product-select">Selecciona un producto:</label>
+        <select id="product-select" required></select>
+
+        <label for="review-rating">Calificación (1-5):</label>
+        <input type="number" id="review-rating" min="1" max="5" required>
+
+        <label for="review-comment">Comentario:</label>
+        <textarea id="review-comment" required></textarea>
+
+        <label for="review-image">Imagen:</label>
+        <input type="file" id="review-image" accept="image/*">
+
+        <button type="submit">Guardar Reseña</button>
+        <button type="button" class="close-modal">Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="main-footer">
+    <p>&copy; 2024 Café Arandia. Todos los derechos reservados.</p>
+  </footer>
+
+  <script>
+    const modal = document.getElementById('review-modal');
+    const openModalBtn = document.getElementById('add-review-btn');
+    const closeModalBtns = document.querySelectorAll('.close-modal');
+
+    openModalBtn.addEventListener('click', () => modal.classList.remove('hidden'));
+    closeModalBtns.forEach(btn => btn.addEventListener('click', () => modal.classList.add('hidden')));
+
+    const reviewForm = document.getElementById('review-form');
+    reviewForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const user = JSON.parse(localStorage.getItem('user')) || { id: 1 };
+      const formData = new FormData();
+      formData.append('productId', document.getElementById('product-select').value);
+      formData.append('calificacion', document.getElementById('review-rating').value);
+      formData.append('comentario', document.getElementById('review-comment').value);
+      formData.append('imagen', document.getElementById('review-image').files[0]);
+      formData.append('userId', user.id);
+
+      try {
+        const response = await fetch('http://localhost:8000/reviews/create', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+        alert(result.message || 'Reseña añadida');
+        modal.classList.add('hidden');
+        loadReviews();
+      } catch (error) {
+        console.error('Error al añadir reseña:', error);
+        alert('Error al añadir reseña. Revisa la consola.');
+      }
+    });
+
+    async function loadProductsForSelect() {
+      try {
+        const response = await fetch('http://localhost:8000/products');
+        if (!response.ok) throw new Error('Error al cargar productos');
+
+        const products = await response.json();
+        const productSelect = document.getElementById('product-select');
+        productSelect.innerHTML = products.map(product => `
+          <option value="${product.id}">${product.nombre}</option>`).join('');
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+        alert('Error al cargar productos. Revisa la consola.');
+      }
+    }
+
+    async function loadReviews() {
+      try {
+        const response = await fetch('http://localhost:8000/reviews');
+        if (!response.ok) throw new Error('Error al cargar reseñas');
+
+        const reviews = await response.json();
+        const reviewList = document.getElementById('review-list');
+        reviewList.innerHTML = reviews.map(review => `
+          <article class="blog-post">
+            <img src="http://localhost:8000${review.imagen || '/default-image.jpg'}" alt="Reseña de ${review.product?.nombre || 'Desconocido'}">
+            <div class="blog-content">
+              <h3>${review.calificacion} estrellas</h3>
+              <p>${review.comentario}</p>
+              <p><em>Por: ${review.user?.nombre || 'Usuario desconocido'}</em></p>
+            </div>
+          </article>`).join('');
+      } catch (error) {
+        console.error('Error al cargar reseñas:', error);
+        alert('Error al cargar reseñas. Revisa la consola.');
+      }
+    }
+
+    loadProductsForSelect();
+    loadReviews();
+  </script>
+</body>
+
+</html>
